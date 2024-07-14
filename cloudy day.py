@@ -1,10 +1,7 @@
 #!/bin/python3
-
-import math
 import os
-import random
-import re
 import sys
+from collections import defaultdict
 
 #
 # Complete the 'maximumPeople' function below.
@@ -18,39 +15,40 @@ import sys
 #
 
 def maximumPeople(p, x, y, r):
-    tp = sorted(zip(x, p))
-    cov = []
-    for i in range(len(y)):
-        cov.append((y[i] - r[i], y[i] + r[i], i))
-    cov.sort()
-    sp = 0
-    t_covered = [0] * len(x)
-    cp = [0] * len(y)
-    town_map = [[] for _ in range(len(y))]
-    i = 0
-    for town_idx, (pos, pop) in enumerate(tp):
-        while i < len(cov) and cov[i][1] < pos:
-            i += 1
-        for j in range(i, len(cov)):
-            if cov[j][0] <= pos <= cov[j][1]:
-                town_map[cov[j][2]].append(town_idx)
-                cp[cov[j][2]] += pop
-                t_covered[town_idx] += 1
-    
-    for j, (pos, pop) in enumerate(tp):
-        if t_covered[j] == 0:
-            sp += pop
+    n = len(p)
+    m = len(y)
 
-    max_sunny_population = sp
-    
-    for i in range(len(y)):
-        current_sunny_population = sp
-        for town_idx in town_map[i]:
-            if t_covered[town_idx] == 1:
-                current_sunny_population += tp[town_idx][1]
-        max_sunny_population = max(max_sunny_population, current_sunny_population)
-    
-    return max_sunny_population
+    events = []
+    for i in range(n):
+        events.append((x[i], 'town', p[i]))
+
+    for j in range(m):
+        events.append((y[j] - r[j], 'cloud_start', j))
+        events.append((y[j] + r[j] + 1, 'cloud_end', j))
+
+    events.sort()
+
+    cc = defaultdict(int)
+    c_clouds = set()
+    asp = 0
+    ri = defaultdict(int)
+
+    for event in events:
+        if event[1] == 'town':
+            if len(c_clouds) == 0:
+                asp += event[2]
+            elif len(c_clouds) == 1:
+                cloud_id = next(iter(c_clouds))
+                ri[cloud_id] += event[2]
+        elif event[1] == 'cloud_start':
+            cc[event[2]] = 0
+            c_clouds.add(event[2])
+        elif event[1] == 'cloud_end':
+            c_clouds.remove(event[2])
+
+    max_swr = max(ri.values(), default=0)
+
+    return asp + max_swr
 
 if __name__ == '__main__':
     fptr = open(os.environ['OUTPUT_PATH'], 'w')
@@ -58,15 +56,20 @@ if __name__ == '__main__':
     n = int(input().strip())
 
     p = list(map(int, input().rstrip().split()))
+
     x = list(map(int, input().rstrip().split()))
 
     m = int(input().strip())
+
     y = list(map(int, input().rstrip().split()))
+
     r = list(map(int, input().rstrip().split()))
 
     result = maximumPeople(p, x, y, r)
 
     fptr.write(str(result) + '\n')
+
     fptr.close()
+
 
 
